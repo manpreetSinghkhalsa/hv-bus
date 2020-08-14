@@ -1,23 +1,9 @@
 const ticketValidator = require("../validators/ticketValidator");
+const internalTicketUtil = require("../internal.services/ticket.service");
 const db = require("../models");
 
 const Ticket = db.models.ticket;
 const User = db.models.user;
-
-
-function postUserFoundCallback(requestObject, res, dbUserObj) {
-  const ticketObj = Ticket.generateTicketSchema({
-    user: dbUserObj, seatNumber: requestObject.seatNumber, isAvailable: requestObject.isAvailable
-  });
-
-  // TODO: Need to update the isAvailable instead of creating new entry
-  ticketObj.save(ticketObj).then(dbTicketObj => {
-    res.status(200).send(dbTicketObj);
-  }).catch(err => {
-    console.log("Err in saving user obj " + err);
-    res.status(500).send({err: err});
-  });
-}
 
 
 function generateBookTicketRequestObject(req) {
@@ -40,14 +26,7 @@ exports.bookTicket = (req, res) => {
 
   userObj
       .save(userObj)
-      .then(dbUserData => {
-        updateTicketStatus(requestObject.seatNumber, false, dbUserData, res,
-            function (response) {
-          return response.status(201).send();
-          }, function (response) {
-          return response.status(500).send({err: "Some error occurred."});
-        });
-      })
+      .then(dbUserData => internalTicketUtil.changeTicketStatusToClosed(requestObject, dbUserData, res))
       .catch(err => {
         console.log("Err in saving user obj " + err);
         res.status(500).send({err: err});
@@ -55,30 +34,13 @@ exports.bookTicket = (req, res) => {
 };
 
 
-function updateTicketStatus(seatNumber, isAvailable, userObject, responseObject, successCallback, errorCallback) {
-  let filterObj = { seat_number: seatNumber };
-  let updateQuery = { $set: { is_available: isAvailable } };
-  if (userObject) {
-    updateQuery["$set"]["user"] = userObject;
-  }
-
-  Ticket.update(filterObj, updateQuery)
-      .then(dbData => {
-        successCallback(responseObject);
-      })
-      .catch(err => {
-        errorCallback(responseObject);
-        console.log("Err in updating ticket obj " + err);
-      });
-}
-
 exports.updateTicketStatus = (req, res) => {
   let seatNumber = req.params.seatNumber;
   let requestObject = { seatNumber: req.params.seatNumber };
 
   ticketValidator.validateVacantSeatRequest(requestObject);
 
-  updateTicketStatus(seatNumber, true, false, res,function (response) {
+  internalTicketUtil.updateTicketStatus(seatNumber, true, false, res,function (response) {
     return response.status(201).send();
   }, function (response) {
     return response.status(500).send({err: "Some error occurred."});
@@ -135,7 +97,7 @@ exports.findPassenger = (req, res) => {
       });
 };
 
-// TODO: have to clean this one
+
 
 exports.resetAllTickets = (req, res) => {
   // TODO: Add validations for the range
