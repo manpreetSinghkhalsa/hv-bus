@@ -48,7 +48,6 @@ exports.bookTicket = (req, res) => {
 };
 
 
-// TODO: Need to test this
 exports.updateTicketStatus = (req, res) => {
   let requestObject = { seatNumber: req.params.seatNumber };
 
@@ -67,22 +66,19 @@ exports.updateTicketStatus = (req, res) => {
       });
 };
 
-// Retrieve all Tutorials from the database.
-exports.findAll = (req, res) => {
-  const title = req.query.title;
-  const condition = {
-    is_available: req.query.isAvailable
+
+exports.getAllBasedOnQueryParams = (req, res) => {
+  let condition = {
+    is_available: req.query.isAvailable === "true"
   };
 
-  Ticket.find(condition)
-      .then(data => {
-        res.send(data);
-      })
-      .catch(err => {
-        res.status(500).send({
-          message: err.message || "Some error occurred while retrieving."
-        });
-      });
+  Ticket.find(condition).then(data => {
+    res.send(data);
+  }).catch(err => {
+    res.status(500).send({
+      message: err.message || "Some error occurred while retrieving."
+    });
+  });
 };
 
 

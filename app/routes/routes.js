@@ -10,8 +10,10 @@ module.exports = app => {
   router.get("/status", statusController.statusCheck);
 
   // Ticket apis
+  router.get(ticketApiPrefix + "/", ticketController.getAllBasedOnQueryParams);
   router.post(ticketApiPrefix + "/book", ticketController.bookTicket);
   router.put(ticketApiPrefix + "/:seatNumber/vacant", ticketController.updateTicketStatus);
+
   router.get(ticketApiPrefix + "/:seatNumber", ticketController.findOne);
   router.get(ticketApiPrefix + "/:seatNumber/passenger", ticketController.findPassenger);
   router.post(ticketApiPrefix + "/admin/reset-tickets", ticketController.resetAllTickets);
