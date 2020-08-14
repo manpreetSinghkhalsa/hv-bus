@@ -17,4 +17,15 @@ let finalUserSchemaObject = Object.assign({}, userSchemaObject, defaultModel.att
 
 const UserSchema = mongoose.Schema(finalUserSchemaObject);
 
-module.exports = mongoose.model('User', UserSchema);
+const UserModelObj = mongoose.model('User', UserSchema);
+
+module.exports = UserModelObj;
+
+module.exports.generateUserObject = (data) => {
+    return new UserModelObj({
+        name: data.name,
+        phone: data.phone,
+        created_at: new Date(),
+        updated_at: new Date()
+    });
+};

@@ -29,4 +29,14 @@ let finalTicketSchemaObj = Object.assign({}, ticketSchemaObj, defaultModel.attri
 
 const TicketSchema = mongoose.Schema(finalTicketSchemaObj);
 
-module.exports = mongoose.model('Ticket', TicketSchema);
+const modelObject = mongoose.model('Ticket', TicketSchema);
+module.exports = modelObject;
+
+module.exports.generateTicketSchema = (data) => {
+    return new modelObject({
+        user: data.user,
+        seat_number: data.seatNumber,
+        is_available: data.isAvailable,
+        booked_date: data.bookedDate || new Date()
+    });
+};

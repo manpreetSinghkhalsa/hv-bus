@@ -1,32 +1,58 @@
+const bookTicketValidator = require("../validators/bookTicketValidator");
 const db = require("../models");
 const Ticket = db.models.ticket;
 const User = db.models.user;
 
 
-function postUserFoundCallback(req, res, dbUserObj) {
-  const ticketObj = new Ticket({
-    user: dbUserObj,
-    seat_number: req.body.seat_number,
-    is_available: req.body.is_available,
-    booked_date: new Date()
+function postUserFoundCallback(requestObject, res, dbUserObj) {
+  const ticketObj = Ticket.generateTicketSchema({
+    user: dbUserObj, seatNumber: requestObject.seatNumber, isAvailable: requestObject.isAvailable
   });
 
   ticketObj.save(ticketObj).then(dbTicketObj => {
     res.status(200).send(dbTicketObj);
   }).catch(err => {
-    console.log("Err in saving user obj");
+    console.log("Err in saving user obj " + err);
     res.status(500).send({err: err});
   });
 }
 
-// Create and Save a new Tutorial
-exports.create = (req, res) => {
-
-  // TODO: Validations missing
-  // TODO: This should be get or create
-  const userObj = new User({
+function generateBookTicketRequestObject(req) {
+  return {
     name: req.body.name,
     phone: req.body.phone,
+    seatNumber: req.body.seatNumber,
+    isAvailable: true
+  }
+}
+
+
+// Create a user and book ticket
+exports.bookTicket = (req, res) => {
+  let requestObject = generateBookTicketRequestObject(req);
+  bookTicketValidator.validate(requestObject);
+
+  // TODO: This should be get or create
+  const userObj = User.generateUserObject(requestObject);
+
+  userObj
+      .save(userObj)
+      .then(dbUserData => postUserFoundCallback(requestObject, res, dbUserData))
+      .catch(err => {
+        console.log("Err in saving user obj " + err);
+        res.status(500).send({err: err});
+      });
+};
+
+// TODO: Need to test this
+exports.updateTicketStatus = (req, res) => {
+  let requestObject = generateBookTicketRequestObject(req);
+  bookTicketValidator.validate(requestObject);
+
+  // TODO: This should be get or create
+  const userObj = new User({
+    name: requestObject.name,
+    phone: requestObject.phone,
     created_at: new Date(),
     updated_at: new Date()
   });
