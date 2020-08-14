@@ -3,16 +3,18 @@ module.exports = app => {
   const statusController = require("../controllers/status.controller");
 
   let router = require("express").Router();
+  let currentApiVersion = "/v1";
+  let ticketApiPrefix = "/api" + currentApiVersion;
 
-  router.post("/", ticketController.create);
-  router.get("/:seatNumber", ticketController.findOne);
-  router.get("/:seatNumber/passenger", ticketController.findPassenger);
-  router.post("/admin/reset-tickets", ticketController.resetAllTickets);
+  // Status api
+  router.get("/status", statusController.statusCheck);
 
-  app.use("/api", router);
+  // Ticket apis
+  router.post(ticketApiPrefix + "/", ticketController.create);
+  router.get(ticketApiPrefix + "/:seatNumber", ticketController.findOne);
+  router.get(ticketApiPrefix + "/:seatNumber/passenger", ticketController.findPassenger);
+  router.post(ticketApiPrefix + "/admin/reset-tickets", ticketController.resetAllTickets);
 
-  let statusRouter = require("express").Router();
-  statusRouter.get("/status", statusController.statusCheck);
-  app.use("", statusRouter);
+  app.use("/", router);
 
 };
