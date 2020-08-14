@@ -10,7 +10,7 @@ function postUserFoundCallback(requestObject, res, dbUserObj) {
   const ticketObj = Ticket.generateTicketSchema({
     user: dbUserObj, seatNumber: requestObject.seatNumber, isAvailable: requestObject.isAvailable
   });
-
+  // TODO: Need to update the isAvailable instead of creating new entry
   ticketObj.save(ticketObj).then(dbTicketObj => {
     res.status(200).send(dbTicketObj);
   }).catch(err => {
@@ -82,12 +82,12 @@ exports.getAllBasedOnQueryParams = (req, res) => {
 };
 
 
-// Find a single Tutorial with an id
 exports.findOne = (req, res) => {
-  // TODO: Add validations for the range
   const seatNumber = req.params.seatNumber;
   const query = { seat_number: seatNumber };
-  // Ticket.find(query, { seat_number: 1, booking_date: 1, is_available: 1})
+
+  ticketValidator.validateSeatNumber({ seatNumber: seatNumber } );
+
   Ticket.find(query, { _id: 0, user: 0 })
     .then(data => {
       if (!data || data.length === 0) {

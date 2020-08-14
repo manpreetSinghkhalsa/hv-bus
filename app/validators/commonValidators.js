@@ -19,7 +19,6 @@ exports.validateRange = (elementName, element, min, max) => {
 };
 
 exports.validateBoolean = (elementName, element) => {
-    exists(element, elementName);
     if (element !== true && element !== false) {
         throw new Error(elementName + " is not a valid boolean value");
     }

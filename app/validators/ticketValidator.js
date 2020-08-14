@@ -16,3 +16,5 @@ exports.validateVacantSeatRequest = (requestObj) => {
     validateSeatNumber(requestObj);
     // TODO: Validate that seat is already taken
 };
+
+exports.validateSeatNumber = validateSeatNumber;
