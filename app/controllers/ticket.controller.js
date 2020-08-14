@@ -10,6 +10,7 @@ function postUserFoundCallback(requestObject, res, dbUserObj) {
   const ticketObj = Ticket.generateTicketSchema({
     user: dbUserObj, seatNumber: requestObject.seatNumber, isAvailable: requestObject.isAvailable
   });
+
   // TODO: Need to update the isAvailable instead of creating new entry
   ticketObj.save(ticketObj).then(dbTicketObj => {
     res.status(200).send(dbTicketObj);
@@ -100,26 +101,23 @@ exports.findOne = (req, res) => {
     });
 };
 
+
 exports.findPassenger = (req, res) => {
-  // TODO: Add validations for the range
   const seatNumber = req.params.seatNumber;
   const query = { seat_number: seatNumber };
-  // Ticket.find(query, { seat_number: 1, booking_date: 1, is_available: 1})
-  // Ticket.find(query, { user: 1 }).populate('User')
-  // Ticket.find(query, { seat_number: 0, is_available: 0, booked_date: 0   })
+
+  ticketValidator.validateSeatNumber({ seatNumber: seatNumber } );
+
   Ticket.find(query, { user: 1, _id: 0   })
       .populate("user")
       .then(data => {
-      if (!data || data.length === 0) {
-        res.status(404).send({message: "Ticket not found with seat number: " + seatNumber});
-      } else {
         res.status(200).send(data);
-      }
-    }).catch(err => {
-      res.status(500).send({ message: "Error retrieving Ticket with seat number: " + seatNumber });
-    });
+      }).catch(err => {
+        res.status(500).send({ message: "Error retrieving Ticket with seat number: " + seatNumber });
+      });
 };
 
+// TODO: have to clean this one
 exports.resetAllTickets = (req, res) => {
   // TODO: Add validations for the range
 
