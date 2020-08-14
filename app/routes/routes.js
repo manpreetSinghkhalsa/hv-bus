@@ -11,7 +11,7 @@ module.exports = app => {
 
   // Ticket apis
   router.post(ticketApiPrefix + "/book", ticketController.bookTicket);
-  router.put(ticketApiPrefix + "/update-status", ticketController.updateTicketStatus);
+  router.put(ticketApiPrefix + "/:seatNumber/vacant", ticketController.updateTicketStatus);
   router.get(ticketApiPrefix + "/:seatNumber", ticketController.findOne);
   router.get(ticketApiPrefix + "/:seatNumber/passenger", ticketController.findPassenger);
   router.post(ticketApiPrefix + "/admin/reset-tickets", ticketController.resetAllTickets);

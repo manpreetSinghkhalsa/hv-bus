@@ -1,4 +1,6 @@
-const bookTicketValidator = require("../validators/bookTicketValidator");
+const ticketValidator = require("../validators/ticketValidator");
+const commonValidator = require("../validators/commonValidators");
+
 const db = require("../models");
 const Ticket = db.models.ticket;
 const User = db.models.user;
@@ -17,12 +19,13 @@ function postUserFoundCallback(requestObject, res, dbUserObj) {
   });
 }
 
+
 function generateBookTicketRequestObject(req) {
   return {
     name: req.body.name,
     phone: req.body.phone,
     seatNumber: req.body.seatNumber,
-    isAvailable: true
+    isAvailable: false
   }
 }
 
@@ -30,7 +33,7 @@ function generateBookTicketRequestObject(req) {
 // Create a user and book ticket
 exports.bookTicket = (req, res) => {
   let requestObject = generateBookTicketRequestObject(req);
-  bookTicketValidator.validate(requestObject);
+  ticketValidator.validate(requestObject);
 
   // TODO: This should be get or create
   const userObj = User.generateUserObject(requestObject);
@@ -44,24 +47,22 @@ exports.bookTicket = (req, res) => {
       });
 };
 
+
 // TODO: Need to test this
 exports.updateTicketStatus = (req, res) => {
-  let requestObject = generateBookTicketRequestObject(req);
-  bookTicketValidator.validate(requestObject);
+  let requestObject = { seatNumber: req.params.seatNumber };
 
-  // TODO: This should be get or create
-  const userObj = new User({
-    name: requestObject.name,
-    phone: requestObject.phone,
-    created_at: new Date(),
-    updated_at: new Date()
-  });
+  ticketValidator.validateVacantSeatRequest(requestObject);
 
-  userObj
-      .save(userObj)
-      .then(dbUserData => postUserFoundCallback(req, res, dbUserData))
+  let filterObj = { seat_number: requestObject.seatNumber };
+  let updateQuery = { $set: { is_available: true } };
+
+  Ticket.update(filterObj, updateQuery)
+      .then(dbData => {
+        res.status(200);
+      })
       .catch(err => {
-        console.log("Err in saving user obj " + err);
+        console.log("Err in updating ticket obj " + err);
         res.status(500).send({err: err});
       });
 };
