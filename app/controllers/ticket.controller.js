@@ -1,7 +1,6 @@
 const ticketValidator = require("../validators/ticketValidator");
-const commonValidator = require("../validators/commonValidators");
-
 const db = require("../models");
+
 const Ticket = db.models.ticket;
 const User = db.models.user;
 
@@ -41,7 +40,14 @@ exports.bookTicket = (req, res) => {
 
   userObj
       .save(userObj)
-      .then(dbUserData => postUserFoundCallback(requestObject, res, dbUserData))
+      .then(dbUserData => {
+        updateTicketStatus(requestObject.seatNumber, false, dbUserData, res,
+            function (response) {
+          return response.status(201).send();
+          }, function (response) {
+          return response.status(500).send({err: "Some error occurred."});
+        });
+      })
       .catch(err => {
         console.log("Err in saving user obj " + err);
         res.status(500).send({err: err});
@@ -49,22 +55,34 @@ exports.bookTicket = (req, res) => {
 };
 
 
+function updateTicketStatus(seatNumber, isAvailable, userObject, responseObject, successCallback, errorCallback) {
+  let filterObj = { seat_number: seatNumber };
+  let updateQuery = { $set: { is_available: isAvailable } };
+  if (userObject) {
+    updateQuery["$set"]["user"] = userObject;
+  }
+
+  Ticket.update(filterObj, updateQuery)
+      .then(dbData => {
+        successCallback(responseObject);
+      })
+      .catch(err => {
+        errorCallback(responseObject);
+        console.log("Err in updating ticket obj " + err);
+      });
+}
+
 exports.updateTicketStatus = (req, res) => {
+  let seatNumber = req.params.seatNumber;
   let requestObject = { seatNumber: req.params.seatNumber };
 
   ticketValidator.validateVacantSeatRequest(requestObject);
 
-  let filterObj = { seat_number: requestObject.seatNumber };
-  let updateQuery = { $set: { is_available: true } };
-
-  Ticket.update(filterObj, updateQuery)
-      .then(dbData => {
-        res.status(200);
-      })
-      .catch(err => {
-        console.log("Err in updating ticket obj " + err);
-        res.status(500).send({err: err});
-      });
+  updateTicketStatus(seatNumber, true, false, res,function (response) {
+    return response.status(201).send();
+  }, function (response) {
+    return response.status(500).send({err: "Some error occurred."});
+  });
 };
 
 
@@ -118,6 +136,7 @@ exports.findPassenger = (req, res) => {
 };
 
 // TODO: have to clean this one
+
 exports.resetAllTickets = (req, res) => {
   // TODO: Add validations for the range
 
