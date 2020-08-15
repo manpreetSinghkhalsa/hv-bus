@@ -4,7 +4,8 @@
   "description": "Take-home assignment for Full Stack Developer role @ HyperVerge",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "test": "mocha --recursive --exit"
   },
   "repository": {
     "type": "git",
@@ -18,8 +19,12 @@
   "homepage": "https://github.com/manpreetSinghkhalsa/hv-bus#readme",
   "dependencies": {
     "body-parser": "^1.19.0",
+    "chai": "^4.2.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
-    "mongoose": "^5.9.29"
+    "mocha": "^8.1.1",
+    "mockgoose": "^8.0.4",
+    "mongoose": "^5.9.29",
+    "supertest": "^4.0.2"
   }
 }
