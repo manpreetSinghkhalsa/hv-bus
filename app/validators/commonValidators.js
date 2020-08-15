@@ -13,7 +13,7 @@ exports.validatePhoneNumber = (element, elementName) => {
 
 exports.validateRange = (elementName, element, min, max) => {
     exists(element, elementName);
-    if (element > max && element < min) {
+    if (element > max || element < min) {
         throw new Error(elementName + " out of range, it must be between " + min + " and " + max);
     }
 };
