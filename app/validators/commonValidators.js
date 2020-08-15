@@ -2,7 +2,7 @@ function exists(element, elementName) {
     if (!element) {
         throw new Error(elementName + " is empty or null or undefined");
     }
-};
+}
 
 exports.validatePhoneNumber = (element, elementName) => {
     exists(element, elementName);

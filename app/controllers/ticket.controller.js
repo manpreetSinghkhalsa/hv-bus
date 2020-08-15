@@ -1,3 +1,4 @@
+const adminValidator = require("../validators/adminValidator");
 const ticketValidator = require("../validators/ticketValidator");
 const internalTicketUtil = require("../internal.services/ticket.service");
 const db = require("../models");
@@ -98,26 +99,11 @@ exports.findPassenger = (req, res) => {
 };
 
 
-
 exports.resetAllTickets = (req, res) => {
-  // TODO: Add validations for the range
+  adminValidator.validateIfAdmin(req.headers.username, req.headers.password);
 
-  Ticket.deleteMany().then(allTicketsData => {
-    let listOfTicketObjects = [];
-    let currentDateObj = new Date();
-    for (let index = 0; index < 40; index++) {
-      const ticketObj = new Ticket({
-        user: undefined,
-        seat_number: index + 1,
-        is_available: true,
-        booked_date: undefined,
-        created_at: currentDateObj,
-        updated_at: currentDateObj
-      });
-      listOfTicketObjects.push(ticketObj);
-    }
-
-    Ticket.insertMany(listOfTicketObjects).then(response => {
+  Ticket.deleteMany().then(dbResponse => {
+    Ticket.insertMany(internalTicketUtil.generateAllTickets()).then(response => {
       res.status(200).send(response);
     }).catch(err => {
       console.log("Err: " + err);

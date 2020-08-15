@@ -37,6 +37,8 @@ module.exports.generateTicketSchema = (data) => {
         user: data.user,
         seat_number: data.seatNumber,
         is_available: data.isAvailable,
-        booked_date: data.bookedDate || new Date()
+        booked_date: data.bookedDate || new Date(),
+        created_at: data.created_at || new Date(),
+        updated_at: data.updated_at || new Date()
     });
 };

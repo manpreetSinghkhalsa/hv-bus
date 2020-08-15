@@ -27,6 +27,23 @@ function updateTicketStatus(seatNumber, isAvailable, userObject, responseObject,
 }
 
 
+exports.generateAllTickets = () => {
+    let listOfTicketObjects = [];
+    let currentDateObj = new Date();
+    for (let index = 0; index < 40; index++) {
+        const ticketObj = Ticket.generateTicketSchema({
+            user: undefined,
+            seatNumber: index + 1,
+            isAvailable: true,
+            bookedDate: undefined,
+            created_at: currentDateObj,
+            updated_at: currentDateObj
+        });
+        listOfTicketObjects.push(ticketObj);
+    }
+    return listOfTicketObjects;
+};
+
 exports.changeTicketStatusToClosed = (requestObject, dbUserData, response) => {
     updateTicketStatus(requestObject.seatNumber, false, dbUserData, response,
         function (response) {
