@@ -2,6 +2,7 @@ const adminValidator = require("../validators/adminValidator");
 const ticketValidator = require("../validators/ticketValidator");
 const internalTicketUtil = require("../internal.services/ticket.service");
 const db = require("../models");
+const async = require("async");
 
 const Ticket = db.models.ticket;
 const User = db.models.user;
@@ -16,22 +17,90 @@ function generateBookTicketRequestObject(req) {
   }
 }
 
+function checkIfTicketIsAvailable(seatNumber, name, phone, callback) {
+  const query = {seat_number: seatNumber, is_available: true};
+
+  Ticket.findOne(query).then(dbTicketObj => {
+    if (dbTicketObj) {
+      return callback(null, dbTicketObj, name, phone);
+    }
+    const errorResponse = {
+      message: "Ticket not available"
+    };
+    return callback(errorResponse);
+  }).catch(err => {
+    console.log("Error occurred while getting ticket obj, err: " + err);
+    callback(err);
+  });
+}
+
+function getUser(dbTicketObj, name, phone, callback) {
+  const userFilter = { phone: phone };
+
+  User.findOne(userFilter).then(dbUserObj => {
+    callback(null, dbTicketObj, dbUserObj, name, phone);
+  }).catch(err => {
+    console.log("Error occurred while getting ticket obj, err: " + err);
+    callback(err);
+  });
+}
+
+function createUser(dbTicketObj, dbUserObj, name, phone, callback) {
+  if (!dbUserObj) {
+    const userObj = User.generateUserObject({ name: name, phone: phone });
+    userObj.save(userObj).then(dbUserObj => {
+      return callback(null, dbTicketObj, dbUserObj);
+    }).catch(err => {
+      console.log("Error occurred while creating user object, err: " + err);
+
+      const errorResponse = {
+        message: "User creation failed"
+      };
+      return callback(errorResponse);
+    });
+  } else {
+    return callback(null, dbTicketObj, dbUserObj);
+  }
+}
+
+function bookTicketDbChanges(dbTicketObj, dbUserObj, callback) {
+  dbTicketObj.is_available = false;
+  dbTicketObj.user = dbUserObj;
+
+  dbTicketObj.markModified('is_available');
+  dbTicketObj.markModified('user');
+
+  dbTicketObj.save(dbTicketObj).then(dbObj => {
+    return callback(null, dbObj);
+  }).catch(err => {
+    console.log("Error occurred while booking ticket, err: " + err);
+    const errorResponse = {
+      message: "Ticket book failed"
+    };
+    return callback(errorResponse);
+  })
+}
 
 // Create a user and book ticket
 exports.bookTicket = (req, res) => {
   let requestObject = generateBookTicketRequestObject(req);
   ticketValidator.validate(requestObject);
+  // TODO: Check if the user is already having a ticket
 
-  // TODO: This should be get or create
-  const userObj = User.generateUserObject(requestObject);
-
-  userObj
-      .save(userObj)
-      .then(dbUserData => internalTicketUtil.changeTicketStatusToClosed(requestObject, dbUserData, res))
-      .catch(err => {
-        console.log("Err in saving user obj " + err);
-        res.status(500).send({err: err});
-      });
+  async.waterfall([
+    function starter(callback) {
+      callback(null, requestObject.seatNumber, requestObject.name, requestObject.phone);
+    },
+    checkIfTicketIsAvailable,
+    getUser,
+    createUser,
+    bookTicketDbChanges
+  ], function (err, results) {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    return res.status(200).send(results);
+  });
 };
 
 
@@ -40,7 +109,7 @@ exports.updateTicketStatus = (req, res) => {
   let requestObject = { seatNumber: req.params.seatNumber };
 
   ticketValidator.validateVacantSeatRequest(requestObject);
-
+  // TODO: Remove the user object from the ticket as well
   internalTicketUtil.updateTicketStatus(seatNumber, true, false, res,function (response) {
     return response.status(201).send();
   }, function (response) {
