@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const defaultModel = require('../models/default.models');
 
-// TODO: we can have history tables for tickets
 
 let ticketSchemaObj = {
     user: {

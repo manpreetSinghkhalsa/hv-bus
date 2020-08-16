@@ -1,10 +1,11 @@
 const adminValidator = require("../validators/adminValidator");
 const ticketValidator = require("../validators/ticketValidator");
 const internalTicketUtil = require("../internal.services/ticket.service");
+const internalUserUtil = require("../internal.services/user.service");
 const db = require("../models");
+const async = require("async");
 
 const Ticket = db.models.ticket;
-const User = db.models.user;
 
 
 function generateBookTicketRequestObject(req) {
@@ -16,22 +17,25 @@ function generateBookTicketRequestObject(req) {
   }
 }
 
-
 // Create a user and book ticket
 exports.bookTicket = (req, res) => {
   let requestObject = generateBookTicketRequestObject(req);
   ticketValidator.validate(requestObject);
 
-  // TODO: This should be get or create
-  const userObj = User.generateUserObject(requestObject);
-
-  userObj
-      .save(userObj)
-      .then(dbUserData => internalTicketUtil.changeTicketStatusToClosed(requestObject, dbUserData, res))
-      .catch(err => {
-        console.log("Err in saving user obj " + err);
-        res.status(500).send({err: err});
-      });
+  async.waterfall([
+    function starter(callback) {
+      callback(null, requestObject.seatNumber, requestObject.name, requestObject.phone);
+    },
+    internalTicketUtil.checkIfTicketIsAvailable,
+    internalUserUtil.getUser,
+    internalUserUtil.createUser,
+    internalTicketUtil.bookTicketDbChanges
+  ], function (err, results) {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    return res.status(200).send(results);
+  });
 };
 
 
@@ -40,8 +44,7 @@ exports.updateTicketStatus = (req, res) => {
   let requestObject = { seatNumber: req.params.seatNumber };
 
   ticketValidator.validateVacantSeatRequest(requestObject);
-
-  internalTicketUtil.updateTicketStatus(seatNumber, true, false, res,function (response) {
+  internalTicketUtil.updateTicketStatus(seatNumber, true, res, function (response) {
     return response.status(201).send();
   }, function (response) {
     return response.status(500).send({err: "Some error occurred."});
@@ -89,7 +92,7 @@ exports.findPassenger = (req, res) => {
 
   ticketValidator.validateSeatNumber({ seatNumber: seatNumber } );
 
-  Ticket.find(query, { user: 1, _id: 0   })
+  Ticket.find(query, { user: 1, _id: 0 })
       .populate("user")
       .then(data => {
         res.status(200).send(data);
