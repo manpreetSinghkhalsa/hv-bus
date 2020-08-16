@@ -38,7 +38,28 @@ function getUser(dbTicketObj, name, phone, callback) {
   const userFilter = { phone: phone };
 
   User.findOne(userFilter).then(dbUserObj => {
-    callback(null, dbTicketObj, dbUserObj, name, phone);
+    if (!dbUserObj) {
+      return callback(null, dbTicketObj, dbUserObj, name, phone);
+    }
+    const ticketFilter = { user: dbUserObj.id };
+    Ticket.findOne(ticketFilter).then(dbData => {
+      if (dbData) {
+        const errorMessage = "Same user already having ticket, with seat number: " + dbData.seat_number;
+
+        const errorResponse = {
+          message: errorMessage
+        };
+        return callback(errorResponse);
+      }
+      callback(null, dbTicketObj, dbUserObj, name, phone);
+    }).catch(err => {
+      console.log("Error occurred while getting user object, err: " + err);
+
+      const errorResponse = {
+        message: "User creation failed"
+      };
+      return callback(errorResponse);
+    });
   }).catch(err => {
     console.log("Error occurred while getting ticket obj, err: " + err);
     callback(err);
@@ -85,7 +106,6 @@ function bookTicketDbChanges(dbTicketObj, dbUserObj, callback) {
 exports.bookTicket = (req, res) => {
   let requestObject = generateBookTicketRequestObject(req);
   ticketValidator.validate(requestObject);
-  // TODO: Check if the user is already having a ticket
 
   async.waterfall([
     function starter(callback) {
@@ -109,7 +129,6 @@ exports.updateTicketStatus = (req, res) => {
   let requestObject = { seatNumber: req.params.seatNumber };
 
   ticketValidator.validateVacantSeatRequest(requestObject);
-  // TODO: Remove the user object from the ticket as well
   internalTicketUtil.updateTicketStatus(seatNumber, true, res, function (response) {
     return response.status(201).send();
   }, function (response) {
