@@ -9,12 +9,10 @@ exports.validate = (requestObj) => {
     commonValidations.validatePhoneNumber(requestObj.phone, "phone");
     validateSeatNumber(requestObj);
     commonValidations.validateBoolean("is available", requestObj.isAvailable);
-    // TODO: Check if the seat is already Booked or not
 };
 
 exports.validateVacantSeatRequest = (requestObj) => {
     validateSeatNumber(requestObj);
-    // TODO: Validate that seat is already taken
 };
 
 exports.validateSeatNumber = validateSeatNumber;
