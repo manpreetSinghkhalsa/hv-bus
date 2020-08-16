@@ -110,7 +110,7 @@ exports.updateTicketStatus = (req, res) => {
 
   ticketValidator.validateVacantSeatRequest(requestObject);
   // TODO: Remove the user object from the ticket as well
-  internalTicketUtil.updateTicketStatus(seatNumber, true, false, res,function (response) {
+  internalTicketUtil.updateTicketStatus(seatNumber, true, res, function (response) {
     return response.status(201).send();
   }, function (response) {
     return response.status(500).send({err: "Some error occurred."});

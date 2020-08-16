@@ -3,18 +3,19 @@ const db = require("../models");
 const Ticket = db.models.ticket;
 
 
-function generateUpdateQuery(isAvailable, userObject) {
-    let updateQuery = { $set: { is_available: isAvailable } };
-    if (userObject) {
-        updateQuery["$set"]["user"] = userObject;
-    }
-    return updateQuery;
+function generateUpdateQuery(isAvailable) {
+    return  {
+        $set: {
+            is_available: isAvailable,
+            user: undefined
+        }
+    };
 }
 
 
-function updateTicketStatus(seatNumber, isAvailable, userObject, responseObject, successCallback, errorCallback) {
+function updateTicketStatus(seatNumber, isAvailable, responseObject, successCallback, errorCallback) {
     let filterObj = { seat_number: seatNumber };
-    let updateQuery = generateUpdateQuery(isAvailable, userObject);
+    let updateQuery = generateUpdateQuery(isAvailable);
 
     Ticket.update(filterObj, updateQuery)
         .then(dbData => {
@@ -22,7 +23,7 @@ function updateTicketStatus(seatNumber, isAvailable, userObject, responseObject,
         })
         .catch(err => {
             errorCallback(responseObject);
-            console.log("Err in updating ticket obj " + err);
+            console.log("Error in updating ticket obj " + err);
         });
 }
 
