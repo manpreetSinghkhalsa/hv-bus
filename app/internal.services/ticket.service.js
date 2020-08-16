@@ -45,6 +45,7 @@ exports.generateAllTickets = () => {
     return listOfTicketObjects;
 };
 
+
 exports.changeTicketStatusToClosed = (requestObject, dbUserData, response) => {
     updateTicketStatus(requestObject.seatNumber, false, dbUserData, response,
         function (response) {
@@ -52,6 +53,49 @@ exports.changeTicketStatusToClosed = (requestObject, dbUserData, response) => {
         }, function (response) {
             return response.status(500).send({err: "Some error occurred."});
         });
+};
+
+
+exports.checkIfTicketIsAvailable = (seatNumber, name, phone, callback) => {
+    const query = {seat_number: seatNumber, is_available: true};
+
+    Ticket.findOne(query).then(dbTicketObj => {
+        if (dbTicketObj) {
+            return callback(null, dbTicketObj, name, phone);
+        }
+        const errorResponse = {
+            message: "Ticket not available"
+        };
+        return callback(errorResponse);
+    }).catch(err => {
+        console.log("Error occurred while getting ticket obj, err: " + err);
+        callback(err);
+    });
+};
+
+
+exports.bookTicketDbChanges = (dbTicketObj, dbUserObj, callback) => {
+    dbTicketObj.is_available = false;
+    dbTicketObj.user = dbUserObj;
+
+    dbTicketObj.markModified('is_available');
+    dbTicketObj.markModified('user');
+
+    dbTicketObj.save(dbTicketObj).then(dbObj => {
+        return callback(null, dbObj);
+    }).catch(err => {
+        console.log("Error occurred while booking ticket, err: " + err);
+        const errorResponse = {
+            message: "Ticket book failed"
+        };
+        return callback(errorResponse);
+    })
+};
+
+
+exports.getTicketFromDb = (userId, successCallback, errorCallback) => {
+    const ticketFilter = { user: userId };
+    Ticket.findOne(ticketFilter).then(dbObject => { successCallback(dbObject) }).catch(err => { errorCallback(err) });
 };
 
 exports.updateTicketStatus = updateTicketStatus;

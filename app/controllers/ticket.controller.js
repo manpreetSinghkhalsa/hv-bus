@@ -1,11 +1,11 @@
 const adminValidator = require("../validators/adminValidator");
 const ticketValidator = require("../validators/ticketValidator");
 const internalTicketUtil = require("../internal.services/ticket.service");
+const internalUserUtil = require("../internal.services/user.service");
 const db = require("../models");
 const async = require("async");
 
 const Ticket = db.models.ticket;
-const User = db.models.user;
 
 
 function generateBookTicketRequestObject(req) {
@@ -17,91 +17,6 @@ function generateBookTicketRequestObject(req) {
   }
 }
 
-function checkIfTicketIsAvailable(seatNumber, name, phone, callback) {
-  const query = {seat_number: seatNumber, is_available: true};
-
-  Ticket.findOne(query).then(dbTicketObj => {
-    if (dbTicketObj) {
-      return callback(null, dbTicketObj, name, phone);
-    }
-    const errorResponse = {
-      message: "Ticket not available"
-    };
-    return callback(errorResponse);
-  }).catch(err => {
-    console.log("Error occurred while getting ticket obj, err: " + err);
-    callback(err);
-  });
-}
-
-function getUser(dbTicketObj, name, phone, callback) {
-  const userFilter = { phone: phone };
-
-  User.findOne(userFilter).then(dbUserObj => {
-    if (!dbUserObj) {
-      return callback(null, dbTicketObj, dbUserObj, name, phone);
-    }
-    const ticketFilter = { user: dbUserObj.id };
-    Ticket.findOne(ticketFilter).then(dbData => {
-      if (dbData) {
-        const errorMessage = "Same user already having ticket, with seat number: " + dbData.seat_number;
-
-        const errorResponse = {
-          message: errorMessage
-        };
-        return callback(errorResponse);
-      }
-      callback(null, dbTicketObj, dbUserObj, name, phone);
-    }).catch(err => {
-      console.log("Error occurred while getting user object, err: " + err);
-
-      const errorResponse = {
-        message: "User creation failed"
-      };
-      return callback(errorResponse);
-    });
-  }).catch(err => {
-    console.log("Error occurred while getting ticket obj, err: " + err);
-    callback(err);
-  });
-}
-
-function createUser(dbTicketObj, dbUserObj, name, phone, callback) {
-  if (!dbUserObj) {
-    const userObj = User.generateUserObject({ name: name, phone: phone });
-    userObj.save(userObj).then(dbUserObj => {
-      return callback(null, dbTicketObj, dbUserObj);
-    }).catch(err => {
-      console.log("Error occurred while creating user object, err: " + err);
-
-      const errorResponse = {
-        message: "User creation failed"
-      };
-      return callback(errorResponse);
-    });
-  } else {
-    return callback(null, dbTicketObj, dbUserObj);
-  }
-}
-
-function bookTicketDbChanges(dbTicketObj, dbUserObj, callback) {
-  dbTicketObj.is_available = false;
-  dbTicketObj.user = dbUserObj;
-
-  dbTicketObj.markModified('is_available');
-  dbTicketObj.markModified('user');
-
-  dbTicketObj.save(dbTicketObj).then(dbObj => {
-    return callback(null, dbObj);
-  }).catch(err => {
-    console.log("Error occurred while booking ticket, err: " + err);
-    const errorResponse = {
-      message: "Ticket book failed"
-    };
-    return callback(errorResponse);
-  })
-}
-
 // Create a user and book ticket
 exports.bookTicket = (req, res) => {
   let requestObject = generateBookTicketRequestObject(req);
@@ -111,10 +26,10 @@ exports.bookTicket = (req, res) => {
     function starter(callback) {
       callback(null, requestObject.seatNumber, requestObject.name, requestObject.phone);
     },
-    checkIfTicketIsAvailable,
-    getUser,
-    createUser,
-    bookTicketDbChanges
+    internalTicketUtil.checkIfTicketIsAvailable,
+    internalUserUtil.getUser,
+    internalUserUtil.createUser,
+    internalTicketUtil.bookTicketDbChanges
   ], function (err, results) {
     if (err) {
       return res.status(500).send(err);
@@ -177,7 +92,7 @@ exports.findPassenger = (req, res) => {
 
   ticketValidator.validateSeatNumber({ seatNumber: seatNumber } );
 
-  Ticket.find(query, { user: 1, _id: 0   })
+  Ticket.find(query, { user: 1, _id: 0 })
       .populate("user")
       .then(data => {
         res.status(200).send(data);
